@@ -6,7 +6,7 @@
     "@types/react": "^16.9.46",
     "@types/react-redux": "^7.1.9",
     "@types/redux-logger": "^3.0.8",
-    "axios": "^0.20.0",
+    "axios": "^0.21.1",
     "formik": "^2.1.5",
     "immutable": "^3.8.2",
     "rxjs": "^6.6.2"
