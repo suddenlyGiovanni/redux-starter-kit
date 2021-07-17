@@ -1,99 +1,52 @@
 {
-  "name": "@reduxjs/toolkit",
-  "version": "1.5.1",
+  "name": "rtk-monorepo",
+  "private": true,
   "description": "The official, opinionated, batteries-included toolset for efficient Redux development",
+  "author": "Mark Erikson <mark@isquaredsoftware.com>",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/reduxjs/redux-toolkit.git"
   },
-  "keywords": [
-    "redux",
-    "react",
-    "starter",
-    "toolkit",
-    "reducer",
-    "slice",
-    "immer",
-    "immutable"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "main": "dist/index.js",
-  "module": "dist/redux-toolkit.esm.js",
-  "unpkg": "dist/redux-toolkit.umd.min.js",
-  "types": "dist/typings.d.ts",
-  "author": "Mark Erikson <mark@isquaredsoftware.com>",
-  "license": "MIT",
-  "devDependencies": {
-    "@microsoft/api-extractor": "^7.13.2",
-    "@types/jest": "^24.0.11",
-    "@types/json-stringify-safe": "^5.0.0",
-    "@types/nanoid": "^2.1.0",
-    "@types/node": "^10.14.4",
-    "@typescript-eslint/eslint-plugin": "^3.9.1",
-    "@typescript-eslint/parser": "^3.9.1",
-    "axios": "^0.19.2",
-    "console-testing-library": "^0.3.1",
-    "convert-source-map": "^1.7.0",
-    "esbuild": "0.8.57",
-    "eslint-config-react-app": "^5.0.1",
-    "fs-extra": "^9.1.0",
-    "invariant": "^2.2.4",
-    "json-stringify-safe": "^5.0.1",
-    "magic-string": "^0.25.7",
-    "merge-source-map": "^1.1.0",
-    "prettier": "^2.2.1",
-    "react": "^16.8.6",
-    "rollup-plugin-strip-code": "^0.2.6",
-    "terser": "^5.6.1",
-    "tsdx": "^0.14.1",
-    "tslib": "^1.10.0",
-    "typescript": "^4.2.3",
-    "typings-tester": "^0.3.2"
-  },
-  "scripts": {
-    "build-ci": "node scripts/build.js && tsc && tsc -p src/query/tsconfig.json && api-extractor run",
-    "build": "node scripts/build.js && tsc && tsc -p src/query/tsconfig.json && api-extractor run --local",
-    "dev": "tsdx watch  --format cjs,esm,system,umd",
-    "format": "prettier --write \"src/**/*.ts\" \"**/*.md\"",
-    "format:check": "prettier --list-different \"src/**/*.ts\" \"docs/*/**.md\"",
-    "lint": "tsdx lint src",
-    "prepare": "npm run lint && npm run format:check && npm test && npm run type-tests && npm run build-ci",
-    "test": "tsdx test",
-    "type-tests": "cd type-tests/files && tsc"
-  },
-  "files": [
-    "dist/*.js",
-    "dist/*.js.map",
-    "dist/typings.d.ts",
-    "src",
-    "query"
-  ],
-  "dependencies": {
-    "immer": "^9.0.1",
-    "redux": "^4.0.0",
-    "redux-thunk": "^2.3.0",
-    "reselect": "^4.0.0"
-  },
-  "sideEffects": false,
-  "jest": {
-    "globals": {
-      "ts-jest": {
-        "diagnostics": {
-          "ignoreCodes": [
-            6133
-          ]
-        }
-      }
-    }
-  },
   "bugs": {
     "url": "https://github.com/reduxjs/redux-toolkit/issues"
   },
-  "homepage": "https://github.com/reduxjs/redux-toolkit#readme",
+  "homepage": "https://redux-toolkit.js.org",
   "directories": {
-    "doc": "docs",
     "example": "example"
+  },
+  "workspaces": [
+    "packages/*",
+    "docs",
+    "website",
+    "examples/query/react/*"
+  ],
+  "devDependencies": {
+    "eslint": "^7.25.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-config-react-app": "^5.0.1",
+    "eslint-plugin-flowtype": "^5.7.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-react": "^7.23.2",
+    "eslint-plugin-react-hooks": "^4.2.0",
+    "netlify-plugin-cache": "^1.0.3",
+    "prettier": "^2.2.1"
+  },
+  "resolutions": {
+    "react-scripts": "patch:react-scripts@npm:4.0.2#.yarn/patches/react-scripts__npm_4.0.2.patch",
+    "react-redux": "npm:7.2.4",
+    "react": "npm:17.0.2",
+    "react-dom": "npm:17.0.2"
+  },
+  "scripts": {
+    "build": "yarn build:packages",
+    "test": "yarn test:packages",
+    "build:examples": "yarn workspaces foreach --include '@reduxjs/*' --include '@examples-query-react/*' -vtp run build",
+    "build:docs": "yarn workspace website run build",
+    "build:packages": "yarn workspaces foreach --include '@reduxjs/*' --include '@rtk-query/*' --topological-dev run build",
+    "test:packages": "yarn workspaces foreach --include '@reduxjs/*' --include '@rtk-query/*' run test",
+    "dev:docs": "yarn workspace website run start"
   }
 }

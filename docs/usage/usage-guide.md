@@ -5,6 +5,8 @@ sidebar_label: Usage Guide
 hide_title: true
 ---
 
+&nbsp;
+
 # Usage Guide
 
 The Redux core library is deliberately unopinionated. It lets you decide how you want to handle everything, like store setup, what your state contains, and how you want to build your reducers.
@@ -137,7 +139,9 @@ export default function configureAppStore(preloadedState) {
 }
 ```
 
-If you provide the `middleware` argument, `configureStore` will only use whatever middleware you've listed. If you want to have some custom middleware _and_ the defaults all together, you can call [`getDefaultMiddleware`](../api/getDefaultMiddleware.mdx) and include the results in the `middleware` array you provide.
+If you provide the `middleware` argument, `configureStore` will only use whatever middleware you've listed.
+If you want to have some custom middleware _and_ the defaults all together, you can use the callback notation,
+call [`getDefaultMiddleware`](../api/getDefaultMiddleware.mdx) and include the results in the `middleware` array you return.
 
 ## Writing Reducers
 
@@ -544,7 +548,13 @@ There are many kinds of async middleware for Redux, and each lets you write your
 
 [Each of these libraries has different use cases and tradeoffs](https://redux.js.org/faq/actions#what-async-middleware-should-i-use-how-do-you-decide-between-thunks-sagas-observables-or-something-else).
 
-**We recommend [using the Redux Thunk middleware as the standard approach](https://github.com/reduxjs/redux-thunk)**, as it is sufficient for most typical use cases (such as basic AJAX data fetching). In addition, use of the `async/await` syntax in thunks makes them easier to read.
+:::tip
+
+Redux Toolkit's [**RTK Query data fetching API**](../rtk-query/overview.md) is a purpose built data fetching and caching solution for Redux apps, and can **eliminate the need to write _any_ thunks or reducers to manage data fetching**. We encourage you to try it out and see if it can help simplify the data fetching code in your own apps!
+
+:::
+
+If you do need to write data fetching logic yourself, we recommend [using the Redux Thunk middleware as the standard approach](https://github.com/reduxjs/redux-thunk), as it is sufficient for most typical use cases (such as basic AJAX data fetching). In addition, use of the `async/await` syntax in thunks makes them easier to read.
 
 **The Redux Toolkit `configureStore` function [automatically sets up the thunk middleware by default](../api/getDefaultMiddleware.mdx)**, so you can immediately start writing thunks as part of your application code.
 
@@ -664,12 +674,12 @@ const usersSlice = createSlice({
   reducers: {
     // standard reducer logic, with auto-generated action types per reducer
   },
-  extraReducers: {
+  extraReducers: (builder) => {
     // Add reducers for additional action types here, and handle loading state as needed
-    [fetchUserById.fulfilled]: (state, action) => {
+    builder.addCase(fetchUserById.fulfilled, (state, action) => {
       // Add user to the state array
       state.entities.push(action.payload)
-    },
+    })
   },
 })
 
@@ -870,11 +880,11 @@ export const slice = createSlice({
   name: 'articles',
   initialState: articlesAdapter.getInitialState(),
   reducers: {},
-  extraReducers: {
-    [fetchArticle.fulfilled]: (state, action) => {
+  extraReducers: (builder) => {
+    builder.addCase(fetchArticle.fulfilled, (state, action) => {
       // Handle the fetch result by inserting the articles here
       articlesAdapter.upsertMany(state, action.payload.articles)
-    },
+    })
   },
 })
 
@@ -914,11 +924,11 @@ export const slice = createSlice({
   name: 'comments',
   initialState: commentsAdapter.getInitialState(),
   reducers: {},
-  extraReducers: {
-    [fetchArticle.fulfilled]: (state, action) => {
+  extraReducers: (builder) => {
+    builder.addCase(fetchArticle.fulfilled, (state, action) => {
       // Same for the comments
       commentsAdapter.upsertMany(state, action.payload.comments)
-    },
+    })
   },
 })
 
@@ -930,7 +940,7 @@ You can [view the full code of this example `normalizr` usage on CodeSandbox](ht
 
 ### Using selectors with `createEntityAdapter`
 
-The entity adapter providers a selector factory that generates the most common selectors for you. Taking the examples above, we can add selectors to our `usersSlice` like this:
+The entity adapter provides a selector factory that generates the most common selectors for you. Taking the examples above, we can add selectors to our `usersSlice` like this:
 
 ```js
 // Rename the exports for readability in component usage
@@ -1025,16 +1035,17 @@ The [serializability dev check middleware](../api/serializabilityMiddleware.mdx)
 ```js
 configureStore({
   //...
-  middleware: getDefaultMiddleware({
-    serializableCheck: {
-      // Ignore these action types
-      ignoredActions: ['your/action/type'],
-      // Ignore these field paths in all actions
-      ignoredActionPaths: ['meta.arg', 'payload.timestamp'],
-      // Ignore these paths in the state
-      ignoredPaths: ['items.dates'],
-    },
-  }),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        // Ignore these action types
+        ignoredActions: ['your/action/type'],
+        // Ignore these field paths in all actions
+        ignoredActionPaths: ['meta.arg', 'payload.timestamp'],
+        // Ignore these paths in the state
+        ignoredPaths: ['items.dates'],
+      },
+    }),
 })
 ```
 
@@ -1043,7 +1054,7 @@ configureStore({
 If using Redux-Persist, you should specifically ignore all the action types it dispatches:
 
 ```jsx
-import { configureStore, getDefaultMiddleware } from '@reduxjs/toolkit'
+import { configureStore } from '@reduxjs/toolkit'
 import {
   persistStore,
   persistReducer,
@@ -1070,11 +1081,12 @@ const persistedReducer = persistReducer(persistConfig, rootReducer)
 
 const store = configureStore({
   reducer: persistedReducer,
-  middleware: getDefaultMiddleware({
-    serializableCheck: {
-      ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-    },
-  }),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }),
 })
 
 let persistor = persistStore(store)
@@ -1087,6 +1099,30 @@ ReactDOM.render(
   </Provider>,
   document.getElementById('root')
 )
+```
+
+Additionally, you can purge any persisted state by adding an extra reducer to the specific slice that you would like to clear when calling persistor.purge(). This is especially helpful when you are looking to clear persisted state on a dispatched logout action.
+
+```ts
+import { PURGE } from "redux-persist";
+
+...
+extraReducers: (builder) => {
+    builder.addCase(PURGE, (state) => {
+        customEntityAdapter.removeAll(state);
+    });
+}
+```
+
+It is also strongly recommended to blacklist any api(s) that you have configured with RTK Query. If the api slice reducer is not blacklisted, the api cache will be automatically persisted and restored which could leave you with phantom subscriptions from components that do not exist any more. Configuring this should look something like this:
+
+```ts
+const persistConfig = {
+  key: "root",
+  version: 1,
+  storage,
+  blacklist: [pokemonApi.reducerPath],
+};
 ```
 
 See [Redux Toolkit #121: How to use this with Redux-Persist?](https://github.com/reduxjs/redux-toolkit/issues/121) and [Redux-Persist #988: non-serializable value error](https://github.com/rt2zz/redux-persist/issues/988#issuecomment-552242978) for further discussion.

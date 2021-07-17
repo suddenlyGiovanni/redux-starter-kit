@@ -5,6 +5,8 @@ sidebar_label: configureStore
 hide_title: true
 ---
 
+&nbsp;
+
 # `configureStore`
 
 A friendly abstraction over the standard Redux `createStore` function that adds good defaults
@@ -87,9 +89,9 @@ want added to the store. `configureStore` will automatically pass those to `appl
 If not provided, `configureStore` will call `getDefaultMiddleware` and use the
 array of middleware functions it returns.
 
-Alternately, you may pass a callback function that will receive `getDefaultMiddleware` as its argument,
-and should return a middleware array. This lets you skip importing `getDefaultMiddleware` separately. If using TypeScript, prefer using this syntax, as we provide a more strongly-typed version of `getDefaultMiddleware` that will correctly
-retain the types of the provided middleware when constructing the store.
+Where you wish to add onto or customize the default middleware,
+you may pass a callback function that will receive `getDefaultMiddleware` as its argument,
+and should return a middleware array.
 
 For more details on how the `middleware` parameter works and the list of middleware that are added by default, see the
 [`getDefaultMiddleware` docs page](./getDefaultMiddleware.mdx).
@@ -150,7 +152,7 @@ const store = configureStore({ reducer: rootReducer })
 
 ### Full Example
 
-```ts
+```ts no-transpile
 // file: todos/todosReducer.ts noEmit
 import { Reducer } from '@reduxjs/toolkit'
 declare const reducer: Reducer<{}>
@@ -175,29 +177,29 @@ import visibilityReducer from './visibility/visibilityReducer'
 
 const reducer = {
   todos: todosReducer,
-  visibility: visibilityReducer
+  visibility: visibilityReducer,
 }
 
 const preloadedState = {
   todos: [
     {
       text: 'Eat food',
-      completed: true
+      completed: true,
     },
     {
       text: 'Exercise',
-      completed: false
-    }
+      completed: false,
+    },
   ],
-  visibilityFilter: 'SHOW_COMPLETED'
+  visibilityFilter: 'SHOW_COMPLETED',
 }
 
 const store = configureStore({
   reducer,
-  middleware: getDefaultMiddleware => getDefaultMiddleware().concat(logger),
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(logger),
   devTools: process.env.NODE_ENV !== 'production',
   preloadedState,
-  enhancers: [reduxBatch]
+  enhancers: [reduxBatch],
 })
 
 // The store has been created with these options:

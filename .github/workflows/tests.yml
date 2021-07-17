@@ -1,5 +1,9 @@
 name: CI
 on: [push, pull_request]
+defaults:
+  run:
+    working-directory: ./packages/toolkit
+
 jobs:
   build:
     name: Lint, Test, Build & Pack on Node ${{ matrix.node }}
@@ -18,31 +22,31 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - uses: c-hive/gha-npm-cache@v1
+      - uses: actions/cache@v2
+        with:
+          path: .yarn/cache
+          key: yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-
 
       - name: Install deps
-        run: npm ci
+        run: yarn install
 
-      - name: Pack (including Prepare)
-        run: npm pack
-        env:
-          NODE_ENV: 'production' # this doesn't actually matter, so just set it to production
+      - name: Pack
+        run: yarn pack
 
       - uses: actions/upload-artifact@v2
         with:
           name: package
-          path: reduxjs-toolkit*.tgz
+          path: packages/toolkit/package.tgz
 
-  test:
-    name: Test Types with TypeScript ${{ matrix.ts }}
-
+  test-dist:
+    name: Test against dist
     needs: [build]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         node: ['14.x']
-        ts: ['3.8', '3.9', '4.0', '4.1', 'next']
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
@@ -52,40 +56,76 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - uses: c-hive/gha-npm-cache@v1
+      - uses: actions/cache@v2
+        with:
+          path: .yarn/cache
+          key: yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-
 
       - name: Install deps
-        run: npm ci --ignore-scripts
-
-      - name: Install TypeScript ${{ matrix.ts }}
-        run: npm install typescript@${{ matrix.ts }} --ignore-scripts
+        run: yarn install
 
       - uses: actions/download-artifact@v2
         with:
           name: package
+          path: packages/toolkit
 
-      - name: Unpack build artifact to dist
-        run: tar -xzvf reduxjs-toolkit-*.tgz --strip-components=1 package/dist
+      - run: ls -lah
 
-      - name: Remap @redux/toolkit from src to dist
-        run: |
-          sed -i -e 's|@reduxjs/toolkit": \["./src"\]|@reduxjs/toolkit": ["."]|' ./type-tests/files/tsconfig.json
+      - name: Install build artifact
+        run: yarn workspace @reduxjs/toolkit add $(pwd)/package.tgz
 
-      - name: Prefix `freeze` re-export for pre-3.7 TS versions with @ts-ignore
-        if: ${{ matrix.ts < 3.7 }}
-        run: |
-          sed -i -e "/import .* freeze .* from 'immer'/s/^/\/\/ @ts-ignore\n/" dist/typings.d.ts
-          sed -i -e "/  freeze,/s/^/  \/\/ @ts-ignore\n/" src/index.ts
+      - run: sed -i -e /@remap-prod-remove-line/d ./tsconfig.base.json ./jest.config.js ./src/tests/*.* ./src/query/tests/*.*
 
-      - name: Use typings-tester for old TS versions
-        if: ${{ matrix.ts < 3.9 }}
-        run: |
-          sed -i -e 's/"cd type-tests.*"/"npm run test type-tests"/' package.json
-          sed -i -e 's/@ts-expect-error/typings:expect-error/' type-tests/files/*.typetest.ts
-          sed -i -e 's/@ts-expect-error/@ts-ignore/' type-tests/files/*.ts
-          mv type-tests/types.test.disabled.ts type-tests/types.test.ts
+      - name: Run tests, against dist
+        run: yarn test
+
+  test-types:
+    name: Test Types with TypeScript ${{ matrix.ts }}
+
+    needs: [build]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['14.x']
+        ts: ['3.9', '4.0', '4.1', '4.2', '4.3', 'next']
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Use node ${{ matrix.node }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node }}
+
+      - uses: actions/cache@v2
+        with:
+          path: .yarn/cache
+          key: yarn-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-
+
+      - name: Install deps
+        run: yarn install
+
+      - name: Install TypeScript ${{ matrix.ts }}
+        run: yarn add typescript@${{ matrix.ts }}
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: package
+          path: packages/toolkit
+
+      - name: Install build artifact
+        run: yarn add ./package.tgz
+
+      - run: sed -i -e /@remap-prod-remove-line/d ./tsconfig.base.json ./jest.config.js ./src/tests/*.* ./src/query/tests/*.*
+
+      - name: "@ts-ignore stuff that didn't exist pre-4.1 in the tests"
+        if: ${{ matrix.ts < 4.1 }}
+        run: sed -i -e 's/@pre41-ts-ignore/@ts-ignore/' -e  '/pre41-remove-start/,/pre41-remove-end/d' ./src/tests/*.* ./src/query/tests/*.ts*
 
       - name: Test types
         run: |
-          ./node_modules/.bin/tsc --version
-          npm run type-tests
+          yarn tsc --version
+          yarn type-tests

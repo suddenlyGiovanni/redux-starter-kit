@@ -76,12 +76,12 @@
   --ifm-hero-background-color: #593d88;
   --ifm-hero-text-color: #ffffff;
 }
+
 blockquote {
   color: var(--blockquote-text-color);
   background-color: var(--ifm-blockquote-color);
   border-left: 6px solid var(--ifm-blockquote-color-dark);
   border-radius: var(--ifm-global-radius);
-
 }
 
 .docusaurus-highlight-code-line {
@@ -96,6 +96,14 @@ blockquote {
 }
 div[class*='codeBlockTitle'] {
   padding: 0.15rem var(--ifm-pre-padding);
+}
+
+:root[data-theme='dark'] .admonition code {
+  color: var(--ifm-blockquote-color);
+}
+
+:root[data-theme='dark'] blockquote code {
+  color: var(--ifm-blockquote-color);
 }
 
 code {
@@ -164,7 +172,6 @@ a:visited {
   overflow: hidden;
 }
 
-
 .admonition {
   color: black;
   border-radius: var(--ifm-global-radius);
@@ -199,4 +206,31 @@ a:visited {
 .admonition .admonition-icon svg {
   fill: black;
   stroke: black;
+}
+
+table.checkbox-table tbody td {
+  text-align: center;
+  vertical-align: center;
+}
+
+.diagonal-cell {
+  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' preserveAspectRatio='none' viewBox='0 0 100 100'><line x1='0' y1='0' x2='100' y2='100' stroke='rgb(218,221,225)' vector-effect='non-scaling-stroke'/></svg>");
+  background-size: 100% 100%;
+}
+
+.diagonal-cell--content {
+  display: grid;
+  width: max-content;
+  justify-content: space-between;
+  grid-template-columns: repeat(2, 1fr);
+  grid-auto-rows: 1fr;
+}
+
+.diagonal-cell--topRight {
+  grid-column-start: 2;
+  text-align: right;
+}
+
+.diagonal-cell--bottomLeft {
+  grid-column-start: 1;
 }

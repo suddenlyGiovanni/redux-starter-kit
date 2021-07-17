@@ -5,6 +5,8 @@ sidebar_label: getDefaultMiddleware
 hide_title: true
 ---
 
+&nbsp;
+
 # `getDefaultMiddleware`
 
 Returns an array containing the default list of middleware.
@@ -15,7 +17,7 @@ By default, [`configureStore`](./configureStore.mdx) adds some middleware to the
 
 ```js
 const store = configureStore({
-  reducer: rootReducer
+  reducer: rootReducer,
 })
 
 // Store has middleware added, because the middleware list was not customized
@@ -26,7 +28,7 @@ If you want to customize the list of middleware, you can supply an array of midd
 ```js
 const store = configureStore({
   reducer: rootReducer,
-  middleware: [thunk, logger]
+  middleware: [thunk, logger],
 })
 
 // Store specifically has the thunk and logger middleware applied
@@ -54,36 +56,13 @@ import rootReducer from './reducer'
 
 const store = configureStore({
   reducer: rootReducer,
-  middleware: getDefaultMiddleware => getDefaultMiddleware().concat(logger)
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(logger),
 })
 
 // Store has all of the default middleware added, _plus_ the logger middleware
 ```
 
 It is preferrable to use the chainable `.concat(...)` and `.prepend(...)` methods of the returned `MiddlewareArray` instead of the array spread operator, as the latter can lose valuable type information under some circumstances.
-
-## getDefaultMiddleware import
-
-While the callback notation with `configureStore` shown in the last example is the recommended way of using `getDefaultMiddleware`, it can also be imported to be used independently from 'configureStore':
-
-```ts
-// file: reducer.ts noEmit
-
-export default function rootReducer(state = {}, action: any) {
-  return state
-}
-
-// file: store.ts
-import { getDefaultMiddleware } from '@reduxjs/toolkit'
-
-interface State {
-  // ...
-}
-
-const middlewares = getDefaultMiddleware<State>()
-```
-
-The benefit of using the callback notation is that the `State` type is already pre-bound, which might prevent circular type references when trying to specify generics by hand.
 
 ## Included Default Middleware
 
@@ -149,13 +128,13 @@ import { myCustomApiService } from './api'
 
 const store = configureStore({
   reducer: rootReducer,
-  middleware: getDefaultMiddleware =>
+  middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       thunk: {
-        extraArgument: myCustomApiService
+        extraArgument: myCustomApiService,
       },
-      serializableCheck: false
-    })
+      serializableCheck: false,
+    }),
 })
 ```
 
